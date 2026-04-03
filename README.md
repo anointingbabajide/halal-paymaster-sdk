@@ -1,6 +1,6 @@
 # @halal/paymaster-sdk
 
-A multi-chain SDK that automatically sweeps USDT and USDC deposits from user wallets to your hot wallet. Users never pay gas fees — the SDK handles all of that.
+A multi-chain SDK that automatically sweeps USDT and USDC deposits from user wallets to your hot wallet. Users never pay gas fees,the SDK handles all of that.
 
 ## How It Works
 
