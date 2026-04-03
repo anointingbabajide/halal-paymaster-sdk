@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "lib": ["ES2020"],
+    "outDir": "dist",
+    "rootDir": "../src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "noImplicitAny": false
+  },
+  "include": [
+    "../src/sdk/**/*",
+    "../src/backend/config/**/*",
+    "../src/backend/services/**/*",
+    "../src/backend/contract/**/*"
+  ],
+  "exclude": [
+    "../node_modules",
+    "dist",
+    "../src/backend/scripts/**/*",
+    "../src/backend/routes/**/*",
+    "../src/backend/middleware/**/*",
+    "../src/backend/controllers/**/*",
+    "../src/backend/db/**/*",
+    "../src/backend/server.ts",
+    "../src/backend/app.ts",
+    "../src/backend/config/redis.ts",
+    "../src/backend/config/index.ts",
+    "../src/backend/contract/contract.ts",
+    "../src/backend/services/tron.energy.service.ts",
+    "../src/backend/services/reserve.monitor.service.ts",
+    "../src/backend/services/paymaster.service.ts",
+    "../src/backend/services/policy.service.ts",
+    "../src/backend/services/alchemy_bundler.service.ts",
+    "../src/backend/services/zerodev_bundler.service.ts"
+  ]
+}

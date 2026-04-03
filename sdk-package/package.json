@@ -1,0 +1,59 @@
+{
+  "name": "@halal/paymaster-sdk",
+  "version": "1.0.0",
+  "description": "Multi-chain sweep and paymaster SDK: EVM, Solana, Tron. Gasless transactions for your users.",
+  "main": "dist/sdk/index.js",
+  "types": "dist/sdk/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "publish:npm": "npm run build && npm publish --access public"
+  },
+  "keywords": [
+    "tron",
+    "solana",
+    "evm",
+    "paymaster",
+    "sweep",
+    "crypto",
+    "usdt",
+    "usdc",
+    "halal",
+    "gasless",
+    "account-abstraction",
+    "erc-4337"
+  ],
+  "author": "Anointing Babajide <anointingbabajide@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
+    "bs58": "^5.0.0",
+    "ed25519-hd-key": "^1.3.0",
+    "ethers": "^6.16.0",
+    "mysql2": "^3.20.0",
+    "permissionless": "^0.3.4",
+    "pg": "^8.20.0",
+    "tronweb": "^5.3.5",
+    "viem": "^2.47.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/pg": "^8.20.0",
+    "typescript": "^6.0.2"
+  },
+  "peerDependencies": {
+    "mysql2": "^3.0.0",
+    "pg": "^8.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/halal-paymaster-sdk"
+  }
+}
