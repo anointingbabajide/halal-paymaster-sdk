@@ -1,5 +1,5 @@
 {
-  "name": "paymaster",
+  "name": "@halalfi/paymaster-sdk",
   "version": "1.0.0",
   "description": "Gasless transaction paymaster and fund sweeping system for Halal Payment Service",
   "main": "src/backend/server.js",

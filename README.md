@@ -1,4 +1,4 @@
-# @halal/paymaster-sdk
+# @halalfi/paymaster-sdk
 
 A multi-chain SDK that automatically sweeps USDT and USDC deposits from user wallets to your hot wallet. Users never pay gas fees,the SDK handles all of that.
 
@@ -11,16 +11,16 @@ A multi-chain SDK that automatically sweeps USDT and USDC deposits from user wal
 
 ## Supported Chains
 
-| Chain               | Tokens          | How Fees Work                           |
-| ------------------- | --------------- | --------------------------------------- |
-| Ethereum / Arbitrum | USDT, USDC, ETH | ERC-4337 Paymaster — user pays zero ETH |
-| Solana              | USDT, USDC, SOL | feePayer pattern — user pays zero SOL   |
-| Tron                | USDT, USDC, TRX | Energy delegation — user pays zero TRX  |
+| Chain               | Tokens          | How Fees Work                          |
+| ------------------- | --------------- | -------------------------------------- |
+| Ethereum / Arbitrum | USDT, USDC, ETH | ERC-4337 Paymaster: user pays zero ETH |
+| Solana              | USDT, USDC, SOL | feePayer pattern: user pays zero SOL   |
+| Tron                | USDT, USDC, TRX | Energy delegation: user pays zero TRX  |
 
 ## Installation
 
 ```bash
-npm install @halal/paymaster-sdk
+npm install @halalfi/paymaster-sdk
 ```
 
 ## Requirements
@@ -28,7 +28,7 @@ npm install @halal/paymaster-sdk
 - Node.js 18 or higher
 - PostgreSQL or MySQL database
 - A `wallets` table with `address`, `chain`, `hd_index`, `is_active`
-- A `sweep_history` table — the SDK creates and manages this automatically
+- A `sweep_history` table: the SDK creates and manages this automatically
 
 ## Database Setup
 
@@ -58,7 +58,7 @@ CREATE TABLE sweep_history (
 ## Quick Start
 
 ```typescript
-import { HalalPaymaster } from "@halal/paymaster-sdk";
+import { HalalPaymaster } from "@halalfi/paymaster-sdk";
 
 const paymaster = new HalalPaymaster({
   database: {
@@ -158,7 +158,7 @@ PIMLICO_API_KEY=pim_...
 1. Go to https://tronscan.org
 2. Stake at least 1000 TRX for ENERGY
 3. The SDK automatically delegates energy to user wallets before each sweep
-4. Energy regenerates daily — no ongoing cost
+4. Energy regenerates daily: no ongoing cost
 
 ## Stop
 
@@ -168,4 +168,4 @@ await paymaster.stop();
 
 ## License
 
-MIT — Anointing Babajide
+MIT: Anointing Babajide
