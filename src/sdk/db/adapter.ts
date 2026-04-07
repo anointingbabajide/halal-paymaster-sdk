@@ -75,6 +75,15 @@ export class DBAdapter {
     }
   }
 
+  // helper to quote column/table names based on DB type
+  private quoteIdentifier(name: string): string {
+    if (this.dbType === "mysql") {
+      return `\`${name}\``;
+    } else {
+      return `"${name}"`;
+    }
+  }
+
   async getWalletsByChainType(chainType: string): Promise<WalletRow[]> {
     const {
       tableName,
@@ -84,14 +93,16 @@ export class DBAdapter {
       hdIndexColumn,
     } = this.walletTable;
 
+    const q = this.quoteIdentifier.bind(this);
+
     const rows = await this.query<any>(
       `SELECT 
-      \`${addressColumn}\` as address,
-      \`${chainColumn}\` as chain,
-      \`${hdIndexColumn}\` as hd_index,
-      \`${isActiveColumn}\` as is_active
-     FROM \`${tableName}\`
-     WHERE \`${chainColumn}\` = ? AND \`${isActiveColumn}\` = true`,
+      ${q(addressColumn)} as address,
+      ${q(chainColumn)} as chain,
+      ${q(hdIndexColumn)} as hd_index,
+      ${q(isActiveColumn)} as is_active
+     FROM ${q(tableName)}
+     WHERE ${q(chainColumn)} = ? AND ${q(isActiveColumn)} = true`,
       [chainType],
     );
     return rows;
@@ -106,14 +117,16 @@ export class DBAdapter {
       isActiveColumn,
     } = this.walletTable;
 
+    const q = this.quoteIdentifier.bind(this);
+
     const rows = await this.query<any>(
       `SELECT 
-      \`${addressColumn}\` as address,
-      \`${chainColumn}\` as chain,
-      \`${hdIndexColumn}\` as hd_index,
-      \`${isActiveColumn}\` as is_active
-     FROM \`${tableName}\`
-     WHERE \`${addressColumn}\` = ?`,
+      ${q(addressColumn)} as address,
+      ${q(chainColumn)} as chain,
+      ${q(hdIndexColumn)} as hd_index,
+      ${q(isActiveColumn)} as is_active
+     FROM ${q(tableName)}
+     WHERE ${q(addressColumn)} = ?`,
       [address],
     );
     return rows[0] ?? null;
