@@ -26,7 +26,7 @@ export class HalalPaymaster {
 
     setDBAdapter(this.db);
     // inject config into environment so existing services pick it up
-    // process.env.HD_MNEMONIC = config.keys.hdMnemonic;
+    process.env.HD_MNEMONIC = config.keys.hdMnemonic;
     process.env.SIGNER_PRIVATE_KEY = config.keys.evmSignerKey;
     process.env.SOLANA_FEE_PAYER_PRIVATE_KEY = config.keys.solanaFeePayerKey;
     process.env.TRON_FEE_PAYER_PRIVATE_KEY = config.keys.tronFeePayerKey;
@@ -43,8 +43,8 @@ export class HalalPaymaster {
       throw new Error("[SDK] database.url is required");
     if (!config.database?.type)
       throw new Error("[SDK] database.type is required");
-    // if (!config.keys?.hdMnemonic)
-    //   throw new Error("[SDK] keys.hdMnemonic is required");
+    if (!config.keys?.hdMnemonic)
+      throw new Error("[SDK] keys.hdMnemonic is required");
     if (!config.keys?.evmSignerKey)
       throw new Error("[SDK] keys.evmSignerKey is required");
     if (!config.keys?.solanaFeePayerKey)

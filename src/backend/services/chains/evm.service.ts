@@ -24,16 +24,13 @@ import ERC20_ABI from "../../contract/abi/ERC20Abi.json";
 // ─── HD Wallet ────────────────────────────────────────────────────────────────
 let masterWallet: HDNodeWallet | null = null;
 
+// remove the cached masterWallet — it causes issues when mnemonic changes
 const getMasterWallet = (): HDNodeWallet => {
-  if (!masterWallet) {
-    if (!process.env.HD_MNEMONIC) {
-      throw new Error("HD_MNEMONIC is not set in environment variables");
-    }
-    masterWallet = HDNodeWallet.fromMnemonic(
-      Mnemonic.fromPhrase(process.env.HD_MNEMONIC),
-    );
+  const mnemonic = process.env.HD_MNEMONIC;
+  if (!mnemonic) {
+    throw new Error("HD_MNEMONIC is not set");
   }
-  return masterWallet;
+  return HDNodeWallet.fromMnemonic(Mnemonic.fromPhrase(mnemonic));
 };
 
 const derivePrivateKey = (hdIndex: number): `0x${string}` => {
