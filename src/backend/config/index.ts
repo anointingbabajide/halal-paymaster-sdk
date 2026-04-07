@@ -25,7 +25,7 @@ const config = {
   databaseUrl: process.env.DATABASE_URL!,
 
   // internal api
-  internalApiKey: process.env.INTERNAL_API_KEY!,
+  // internalApiKey: process.env.INTERNAL_API_KEY!,
 
   // paymaster
   maxGasPerOp: MAX_GAS_PER_OP,
@@ -44,9 +44,9 @@ const config = {
 const required = [
   "SIGNER_PRIVATE_KEY",
   "DATABASE_URL",
-  "INTERNAL_API_KEY",
+  // "INTERNAL_API_KEY",
   "PIMLICO_API_KEY",
-  "HD_MNEMONIC",
+  // "HD_MNEMONIC",
 ];
 
 for (const key of required) {

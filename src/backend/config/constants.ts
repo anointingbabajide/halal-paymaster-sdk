@@ -5,7 +5,11 @@ export type ChainType = "evm" | "solana" | "tron";
 export type NetworkType = "testnet" | "mainnet";
 export type TokenKey = "USDC" | "USDT" | "SOL" | "TRX";
 
-export type EVMChainKey = "sepolia" | "arbitrumSepolia";
+export type EVMChainKey =
+  | "sepolia"
+  | "arbitrumSepolia"
+  | "ethereumMainnet"
+  | "arbitrumMainnet";
 export type SolanaChainKey = "solanaDevnet" | "solanaMainnet";
 export type TronChainKey = "tronShasta" | "tronMainnet";
 export type ChainKey = EVMChainKey | SolanaChainKey | TronChainKey;
@@ -64,6 +68,23 @@ export const CHAIN_REGISTRY: Record<ChainKey, ChainDefinition> = {
     },
     simpleAccountFactory: "0x1d2494E2E93460138F52E6D611b995C88072E5c2",
   },
+  ethereumMainnet: {
+    chainType: "evm",
+    chainId: 1,
+    name: "Ethereum Mainnet",
+    networkType: "mainnet",
+    rpcUrl: "https://eth.llamarpc.com",
+    bundlerRpc: `https://api.pimlico.io/v2/ethereum/rpc?apikey=${PIMLICO_KEY}`,
+    blockExplorer: "https://etherscan.io",
+    entryPointAddress: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    paymasterAddress: "", // deploy HalalPaymaster to mainnet first
+    tokens: {
+      USDC: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+      USDT: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+    },
+    simpleAccountFactory: "0x1d2494E2E93460138F52E6D611b995C88072E5c2",
+  },
+
   arbitrumSepolia: {
     chainType: "evm",
     chainId: 421614,
@@ -77,6 +98,23 @@ export const CHAIN_REGISTRY: Record<ChainKey, ChainDefinition> = {
     tokens: {
       USDC: "0x3aD4e995499F590124b7C139BC52E4C7dF0B3c08",
       USDT: "0xdCFB5ca72A6dd3D69598844225C04D107121f0E1",
+    },
+    simpleAccountFactory: "0x1d2494E2E93460138F52E6D611b995C88072E5c2",
+  },
+
+  arbitrumMainnet: {
+    chainType: "evm",
+    chainId: 42161,
+    name: "Arbitrum One",
+    networkType: "mainnet",
+    rpcUrl: "https://arb1.arbitrum.io/rpc",
+    bundlerRpc: `https://api.pimlico.io/v2/arbitrum/rpc?apikey=${PIMLICO_KEY}`,
+    blockExplorer: "https://arbiscan.io",
+    entryPointAddress: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
+    paymasterAddress: "", // no paymaster deployed on Arbitrum mainnet yet
+    tokens: {
+      USDC: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+      USDT: "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
     },
     simpleAccountFactory: "0x1d2494E2E93460138F52E6D611b995C88072E5c2",
   },
