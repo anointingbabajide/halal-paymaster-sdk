@@ -27,3 +27,7 @@ export const dbQuery = async <T = any>(
   const result = await pool.query(pgSql, params);
   return result.rows as T[];
 };
+
+export const getDBAdapter = (): DBAdapter | null => {
+  return dbAdapter;
+};

@@ -3,7 +3,6 @@ import {
   getPublicClient,
   sweepNativeETH,
 } from "./../chains/evm.service";
-import pool from "../../config/db";
 import { parseAbi, parseEther } from "viem";
 import { EVMChainConfig } from "../../config/chains";
 import {

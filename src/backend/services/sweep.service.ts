@@ -32,16 +32,24 @@ import {
   getTRXBalance,
 } from "./chains/tron.service";
 import { dbQuery } from "../config/db.context";
+import { getDBAdapter } from "../config/db.context";
 
 // ─── Get All Wallets ──────────────────────────────────────────────────────────
 export const getAllWallets = async (chainType: string): Promise<string[]> => {
+  const adapter = getDBAdapter();
+  if (adapter) {
+    // use adapter — respects custom column names
+    const rows = await adapter.getWalletsByChainType(chainType);
+    return rows.map((r) => r.address);
+  }
+
+  // standalone fallback
   const rows = await dbQuery<{ address: string }>(
     "SELECT address FROM wallets WHERE chain = ? AND is_active = true",
     [chainType],
   );
   return rows.map((r) => r.address);
 };
-
 // ─── Token Threshold Check ────────────────────────────────────────────────────
 export const getTokensAboveThreshold = async (
   walletAddress: string,
