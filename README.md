@@ -1,10 +1,8 @@
-```markdown
 # @halalfi/paymaster-sdk
 
 A multi-chain paymaster SDK that automatically sweeps USDT and USDC deposits from user wallets to your hot wallet. Users never pay gas fees — the SDK handles all fee sponsorship across EVM, Solana, and Tron.
 
 ## How It Works
-```
 
 User deposits USDT/USDC → SDK detects balance → Sweeps to hot wallet → onSweepComplete fires
 
