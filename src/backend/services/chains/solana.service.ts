@@ -24,6 +24,7 @@ import {
 } from "../../config/constants";
 import { SolanaChainConfig } from "../../config/chains";
 import { getSolanaHotWallet } from "../../helper/hotwallet";
+import { mnemonicToSeedSync } from "bip39";
 
 let feePayerKeypair: Keypair | null = null;
 
@@ -38,14 +39,13 @@ const getFeePayerKeypair = (): Keypair => {
   }
   return feePayerKeypair;
 };
-
-// ─── HD Derivation ────────────────────────────────────────────────────────────
 const deriveSolanaKeypair = (hdIndex: number): Keypair => {
   const mnemonic = process.env.HD_MNEMONIC!;
-  const seed = Mnemonic.fromPhrase(mnemonic);
-  const seedBuffer = Buffer.from(seed.entropy, "hex");
-  const path = `m/44'/501'/${hdIndex}'/0'`;
-  const { key } = derivePath(path, seedBuffer.toString("hex"));
+  const root = "m/44'/501'/0'";
+  const seed = mnemonicToSeedSync(mnemonic);
+  const path = `${root}/${hdIndex}'`; // becomes m/44'/501'/0'/0'  m/44'/501'/0'/1' etc
+  const { key } = derivePath(path, seed.toString("hex"));
+  seed.fill(0);
   return Keypair.fromSeed(key);
 };
 

@@ -18,7 +18,6 @@ import { signUserOperation } from "../paymaster.service";
 import ERC20_ABI from "../../contract/abi/ERC20Abi.json";
 import { getEVMHotWallet } from "../../helper/hotwallet";
 
-// remove the cached masterWallet — it causes issues when mnemonic changes
 const getMasterWallet = (): HDNodeWallet => {
   const mnemonic = process.env.HD_MNEMONIC;
   if (!mnemonic) {

@@ -152,7 +152,7 @@ const sendToken = async () => {
     console.log("Deployer:", deployer.address);
 
     const mockUSDC = new hre.ethers.Contract(
-      "0xdCFB5ca72A6dd3D69598844225C04D107121f0E1",
+      "0x3aD4e995499F590124b7C139BC52E4C7dF0B3c08",
       USDC_ABI,
       deployer,
     );

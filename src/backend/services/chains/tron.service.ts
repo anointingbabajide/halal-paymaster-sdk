@@ -8,18 +8,23 @@ import {
 } from "../../config/constants";
 import { TronChainConfig } from "../../config/chains";
 import { getTronHotWallet } from "../../helper/hotwallet";
+import { mnemonicToSeedSync } from "bip39";
+import { HDKey } from "@scure/bip32";
 
-// ─── HD Derivation ────────────────────────────────────────────────────────────
 const deriveTronPrivateKey = (hdIndex: number): string => {
-  if (!process.env.HD_MNEMONIC) throw new Error("HD_MNEMONIC is not set");
-  const master = HDNodeWallet.fromMnemonic(
-    Mnemonic.fromPhrase(process.env.HD_MNEMONIC),
-  );
-  const purpose = master.deriveChild(44 + 0x80000000);
-  const coinType = purpose.deriveChild(195 + 0x80000000);
-  const account = coinType.deriveChild(0 + 0x80000000);
-  const change = account.deriveChild(0);
-  return change.deriveChild(hdIndex).privateKey.slice(2);
+  const mnemonic = process.env.HD_MNEMONIC!;
+  if (!mnemonic) throw new Error("HD_MNEMONIC is not set");
+
+  const seed = mnemonicToSeedSync(mnemonic);
+  const hd = HDKey.fromMasterSeed(seed);
+  const path = `m/44'/195'/0'/0/${hdIndex}`; // ← match their path
+  const child = hd.derive(path);
+
+  if (!child.privateKey) throw new Error("No private key derived");
+
+  const privateKey = Buffer.from(child.privateKey).toString("hex");
+  seed.fill(0);
+  return privateKey;
 };
 
 // ─── TronWeb Instances ────────────────────────────────────────────────────────
