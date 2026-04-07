@@ -1,8 +1,8 @@
 CREATE TABLE sponsored_operations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id),
-  wallet_address VARCHAR(42) NOT NULL,
-  user_op_hash VARCHAR(66) UNIQUE NOT NULL,
+  wallet_address VARCHAR(100) NOT NULL,
+  user_op_hash VARCHAR(100) UNIQUE NOT NULL,
   gas_cost VARCHAR(78),
   status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failed')),
   created_at TIMESTAMP DEFAULT NOW()

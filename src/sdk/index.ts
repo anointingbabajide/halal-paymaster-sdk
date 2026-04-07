@@ -16,8 +16,12 @@ export class HalalPaymaster {
   constructor(config: HalalPaymasterConfig) {
     this.validateConfig(config);
     this.config = config;
-    this.db = new DBAdapter(config.database.url, config.database.type);
 
+    this.db = new DBAdapter(
+      config.database.url,
+      config.database.type,
+      config.database.tables, // ← pass table config
+    );
     // inject config into environment so existing services pick it up
     process.env.HD_MNEMONIC = config.keys.hdMnemonic;
     process.env.SIGNER_PRIVATE_KEY = config.keys.evmSignerKey;

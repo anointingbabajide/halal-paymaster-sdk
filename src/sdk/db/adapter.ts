@@ -1,6 +1,18 @@
-import { SweepCompleteEvent } from "../types";
+import { TableConfig, WalletTableConfig } from "../types";
 
-// ─── DB Row Types ─────────────────────────────────────────────────────────────
+// ─── Default Table Config ─────────────────────────────────────────────────────
+const DEFAULT_WALLET_TABLE: Required<WalletTableConfig> = {
+  tableName: "wallets",
+  addressColumn: "address",
+  chainColumn: "chain",
+  hdIndexColumn: "hd_index",
+  isActiveColumn: "is_active",
+};
+
+const DEFAULT_SWEEP_HISTORY_TABLE = {
+  tableName: "sweep_history",
+};
+
 export interface WalletRow {
   address: string;
   chain: string;
@@ -8,29 +20,31 @@ export interface WalletRow {
   is_active: boolean;
 }
 
-export interface SweepHistoryRow {
-  id: number;
-  wallet_address: string;
-  chain_id: string;
-  token: string;
-  amount: string;
-  tx_hash: string | null;
-  status: string;
-  error: string | null;
-  created_at: Date;
-}
-
-// ─── DB Adapter ───────────────────────────────────────────────────────────────
-// Works with both MySQL and PostgreSQL
-// Handles query syntax differences internally
 export class DBAdapter {
   private dbType: "mysql" | "postgresql";
   private databaseUrl: string;
   private pool: any;
+  private walletTable: Required<WalletTableConfig>;
+  private sweepHistoryTable: { tableName: string };
 
-  constructor(databaseUrl: string, dbType: "mysql" | "postgresql") {
+  constructor(
+    databaseUrl: string,
+    dbType: "mysql" | "postgresql",
+    tableConfig?: TableConfig,
+  ) {
     this.databaseUrl = databaseUrl;
     this.dbType = dbType;
+
+    // merge user config with defaults
+    this.walletTable = {
+      ...DEFAULT_WALLET_TABLE,
+      ...tableConfig?.wallets,
+    };
+
+    this.sweepHistoryTable = {
+      ...DEFAULT_SWEEP_HISTORY_TABLE,
+      ...tableConfig?.sweepHistory,
+    };
   }
 
   async connect(): Promise<void> {
@@ -46,19 +60,14 @@ export class DBAdapter {
   }
 
   async disconnect(): Promise<void> {
-    if (this.pool) {
-      await this.pool.end();
-    }
+    if (this.pool) await this.pool.end();
   }
 
-  // ─── Query Helper ───────────────────────────────────────────────────────────
-  // MySQL uses ? placeholders, PostgreSQL uses $1 $2 $3
   public async query<T>(sql: string, params: any[] = []): Promise<T[]> {
     if (this.dbType === "mysql") {
       const [rows] = await this.pool.execute(sql, params);
       return rows as T[];
     } else {
-      // convert ? to $1, $2, $3 for PostgreSQL
       let i = 0;
       const pgSql = sql.replace(/\?/g, () => `$${++i}`);
       const result = await this.pool.query(pgSql, params);
@@ -68,19 +77,44 @@ export class DBAdapter {
 
   // ─── Wallet Queries ─────────────────────────────────────────────────────────
   async getWalletsByChainType(chainType: string): Promise<WalletRow[]> {
-    return this.query<WalletRow>(
-      `SELECT address, chain, hd_index, is_active 
-       FROM wallets 
-       WHERE chain = ? AND is_active = true`,
+    const {
+      tableName,
+      chainColumn,
+      isActiveColumn,
+      addressColumn,
+      hdIndexColumn,
+    } = this.walletTable;
+
+    const rows = await this.query<any>(
+      `SELECT 
+        ${addressColumn} as address,
+        ${chainColumn} as chain,
+        ${hdIndexColumn} as hd_index,
+        ${isActiveColumn} as is_active
+       FROM ${tableName}
+       WHERE ${chainColumn} = ? AND ${isActiveColumn} = true`,
       [chainType],
     );
+    return rows;
   }
 
   async getWalletByAddress(address: string): Promise<WalletRow | null> {
-    const rows = await this.query<WalletRow>(
-      `SELECT address, chain, hd_index, is_active 
-       FROM wallets 
-       WHERE address = ?`,
+    const {
+      tableName,
+      addressColumn,
+      hdIndexColumn,
+      chainColumn,
+      isActiveColumn,
+    } = this.walletTable;
+
+    const rows = await this.query<any>(
+      `SELECT 
+        ${addressColumn} as address,
+        ${chainColumn} as chain,
+        ${hdIndexColumn} as hd_index,
+        ${isActiveColumn} as is_active
+       FROM ${tableName}
+       WHERE ${addressColumn} = ?`,
       [address],
     );
     return rows[0] ?? null;
@@ -94,8 +128,9 @@ export class DBAdapter {
     amount: string,
     txHash: string,
   ): Promise<void> {
+    const { tableName } = this.sweepHistoryTable;
     await this.query(
-      `INSERT INTO sweep_history 
+      `INSERT INTO ${tableName}
         (wallet_address, chain_id, token, amount, tx_hash, status, created_at)
        VALUES (?, ?, ?, ?, ?, 'success', NOW())`,
       [walletAddress, chainId, token, amount, txHash],
@@ -108,19 +143,21 @@ export class DBAdapter {
     token: string,
     error: string,
   ): Promise<void> {
+    const { tableName } = this.sweepHistoryTable;
     await this.query(
-      `INSERT INTO sweep_history 
+      `INSERT INTO ${tableName}
         (wallet_address, chain_id, token, amount, tx_hash, status, error, created_at)
        VALUES (?, ?, ?, '0', NULL, 'failed', ?, NOW())`,
       [walletAddress, chainId, token, error],
     );
   }
 
-  async getSweepHistory(address: string): Promise<SweepHistoryRow[]> {
-    return this.query<SweepHistoryRow>(
-      `SELECT * FROM sweep_history 
-       WHERE wallet_address = ? 
-       ORDER BY created_at DESC 
+  async getSweepHistory(address: string) {
+    const { tableName } = this.sweepHistoryTable;
+    return this.query(
+      `SELECT * FROM ${tableName}
+       WHERE wallet_address = ?
+       ORDER BY created_at DESC
        LIMIT 50`,
       [address],
     );
