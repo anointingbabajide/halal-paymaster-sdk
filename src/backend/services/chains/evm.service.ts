@@ -12,17 +12,11 @@ import { toSimpleSmartAccount } from "permissionless/accounts";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { entryPoint07Address } from "viem/account-abstraction";
 import { EVMChainConfig, CHAIN_CONFIGS } from "../../config/chains";
-import {
-  TokenKey,
-  HOT_WALLET_ADDRESS_EVM,
-  ETH_MIN_SWEEP_THRESHOLD,
-} from "../../config/constants";
+import { TokenKey, ETH_MIN_SWEEP_THRESHOLD } from "../../config/constants";
 import { dbQuery, getDBAdapter } from "../../config/db.context";
 import { signUserOperation } from "../paymaster.service";
 import ERC20_ABI from "../../contract/abi/ERC20Abi.json";
-
-// ─── HD Wallet ────────────────────────────────────────────────────────────────
-let masterWallet: HDNodeWallet | null = null;
+import { getEVMHotWallet } from "../../helper/hotwallet";
 
 // remove the cached masterWallet — it causes issues when mnemonic changes
 const getMasterWallet = (): HDNodeWallet => {
@@ -183,11 +177,13 @@ export const sweepERC20 = async (
     const callData = encodeFunctionData({
       abi: ERC20_ABI,
       functionName: "transfer",
-      args: [HOT_WALLET_ADDRESS_EVM as `0x${string}`, balance],
+      args: [getEVMHotWallet() as `0x${string}`, balance], // ← hot wallet goes here
     });
 
     const userOpHash = await smartAccountClient.sendUserOperation({
-      calls: [{ to: tokenAddress as `0x${string}`, value: 0n, data: callData }],
+      calls: [
+        { to: tokenAddress as `0x${string}`, value: 0n, data: callData }, // ← token contract goes here
+      ],
     });
 
     console.log(`[${chainConfig.name}] UserOperation submitted: ${userOpHash}`);
@@ -206,7 +202,7 @@ export const sweepERC20 = async (
     const amountFormatted = (Number(balance) / 1_000_000).toFixed(6);
 
     console.log(
-      `[${chainConfig.name}] Sweep complete: ${amountFormatted} ${token} → ${HOT_WALLET_ADDRESS_EVM}`,
+      `[${chainConfig.name}] Sweep complete: ${amountFormatted} ${token} → ${getEVMHotWallet()}`,
     );
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 
@@ -283,7 +279,7 @@ export const sweepNativeETH = async (
     const userOpHash = await smartAccountClient.sendUserOperation({
       calls: [
         {
-          to: HOT_WALLET_ADDRESS_EVM as `0x${string}`,
+          to: getEVMHotWallet() as `0x${string}`,
           value: balance,
           data: "0x",
         },
@@ -308,7 +304,7 @@ export const sweepNativeETH = async (
     const amountFormatted = formatEther(balance);
 
     console.log(
-      `[${chainConfig.name}] ETH Sweep complete: ${amountFormatted} ETH → ${HOT_WALLET_ADDRESS_EVM}`,
+      `[${chainConfig.name}] ETH Sweep complete: ${amountFormatted} ETH → ${getEVMHotWallet()}`,
     );
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 

@@ -3,11 +3,11 @@ import { HDNodeWallet, Mnemonic } from "ethers";
 import { dbQuery, getDBAdapter } from "../../config/db.context";
 import {
   TokenKey,
-  HOT_WALLET_ADDRESS_TRON,
   SWEEP_THRESHOLD_USD,
   TRX_MIN_SWEEP_THRESHOLD,
 } from "../../config/constants";
 import { TronChainConfig } from "../../config/chains";
+import { getTronHotWallet } from "../../helper/hotwallet";
 
 // ─── HD Derivation ────────────────────────────────────────────────────────────
 const deriveTronPrivateKey = (hdIndex: number): string => {
@@ -218,7 +218,7 @@ export const sweepTRC20 = async (
       "transfer(address,uint256)",
       { feeLimit: 100_000_000, callValue: 0, from: walletAddress },
       [
-        { type: "address", value: HOT_WALLET_ADDRESS_TRON },
+        { type: "address", value: getTronHotWallet() },
         { type: "uint256", value: balanceBig.toString() },
       ],
       walletAddress,
@@ -244,7 +244,7 @@ export const sweepTRC20 = async (
     const amountFormatted = (Number(balanceBig) / 1_000_000).toFixed(6);
 
     console.log(
-      `[${chainConfig.name}] Sweep complete: ${amountFormatted} ${token} → ${HOT_WALLET_ADDRESS_TRON}`,
+      `[${chainConfig.name}] Sweep complete: ${amountFormatted} ${token} → ${getTronHotWallet()}`,
     );
 
     if (chainConfig.networkType === "mainnet") {
@@ -316,7 +316,7 @@ export const sweepNativeTRX = async (
     }
 
     const tx = await tronWeb.transactionBuilder.sendTrx(
-      HOT_WALLET_ADDRESS_TRON,
+      getTronHotWallet(),
       sweepSUN,
       walletAddress,
     );
@@ -332,7 +332,7 @@ export const sweepNativeTRX = async (
     const amountFormatted = (sweepSUN / 1_000_000).toFixed(6);
 
     console.log(
-      `[${chainConfig.name}] TRX Sweep complete: ${amountFormatted} TRX → ${HOT_WALLET_ADDRESS_TRON}`,
+      `[${chainConfig.name}] TRX Sweep complete: ${amountFormatted} TRX → ${getTronHotWallet()}`,
     );
 
     await dbQuery(

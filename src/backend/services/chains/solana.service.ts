@@ -19,11 +19,11 @@ import { derivePath } from "ed25519-hd-key";
 import { dbQuery, getDBAdapter } from "../../config/db.context";
 import {
   TokenKey,
-  HOT_WALLET_ADDRESS_SOLANA,
   SOL_MIN_SWEEP_THRESHOLD,
   SWEEP_THRESHOLD_USD,
 } from "../../config/constants";
 import { SolanaChainConfig } from "../../config/chains";
+import { getSolanaHotWallet } from "../../helper/hotwallet";
 
 let feePayerKeypair: Keypair | null = null;
 
@@ -95,7 +95,7 @@ export const sweepSPLToken = async (
     const connection = getSolanaConnection(chainConfig);
     const mintPublicKey = new PublicKey(tokenMint);
     const walletPublicKey = new PublicKey(walletAddress);
-    const hotWalletPublicKey = new PublicKey(HOT_WALLET_ADDRESS_SOLANA);
+    const hotWalletPublicKey = new PublicKey(getSolanaHotWallet());
 
     const userTokenAccount = await getAssociatedTokenAddress(
       mintPublicKey,
@@ -168,7 +168,7 @@ export const sweepSPLToken = async (
     const amountFormatted = (Number(balance) / 1_000_000).toFixed(6);
 
     console.log(
-      `[${chainConfig.name}] Sweep complete: ${amountFormatted} ${token} → ${HOT_WALLET_ADDRESS_SOLANA}`,
+      `[${chainConfig.name}] Sweep complete: ${amountFormatted} ${token} → ${getSolanaHotWallet()}`,
     );
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 
@@ -213,7 +213,7 @@ export const sweepNativeSOL = async (
     const connection = getSolanaConnection(chainConfig);
 
     const walletPublicKey = new PublicKey(walletAddress);
-    const hotWalletPublicKey = new PublicKey(HOT_WALLET_ADDRESS_SOLANA);
+    const hotWalletPublicKey = new PublicKey(getSolanaHotWallet());
 
     const balanceLamports = await connection.getBalance(walletPublicKey);
     const balanceSOL = balanceLamports / LAMPORTS_PER_SOL;
@@ -265,7 +265,7 @@ export const sweepNativeSOL = async (
     const amountFormatted = (sweepAmount / LAMPORTS_PER_SOL).toFixed(9);
 
     console.log(
-      `[${chainConfig.name}] SOL Sweep complete: ${amountFormatted} SOL → ${HOT_WALLET_ADDRESS_SOLANA}`,
+      `[${chainConfig.name}] SOL Sweep complete: ${amountFormatted} SOL → ${getSolanaHotWallet()}`,
     );
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 
