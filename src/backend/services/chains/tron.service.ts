@@ -1,6 +1,6 @@
 import TronWeb from "tronweb";
 import { HDNodeWallet, Mnemonic } from "ethers";
-import { dbQuery } from "../../config/db.context";
+import { dbQuery, getDBAdapter } from "../../config/db.context";
 import {
   TokenKey,
   HOT_WALLET_ADDRESS_TRON,
@@ -57,6 +57,23 @@ const TRC20_ABI = [
     type: "function",
   },
 ];
+
+// ─── Wallet Lookup ────────────────────────────────────────────────────────────
+const getWalletHdIndex = async (walletAddress: string): Promise<number> => {
+  const adapter = getDBAdapter();
+
+  const walletRow = adapter
+    ? await adapter.getWalletByAddress(walletAddress)
+    : (
+        await dbQuery<{ hd_index: number }>(
+          "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
+          [walletAddress],
+        )
+      )[0];
+
+  if (!walletRow) throw new Error(`Wallet not found: ${walletAddress}`);
+  return walletRow.hd_index;
+};
 
 // ─── Resource Delegation (Mainnet) ────────────────────────────────────────────
 const delegateResources = async (
@@ -173,15 +190,7 @@ export const sweepTRC20 = async (
   }
 
   try {
-    const rows = await dbQuery<{ hd_index: number }>(
-      "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
-      [walletAddress],
-    );
-
-    if (rows.length === 0)
-      throw new Error(`Wallet not found: ${walletAddress}`);
-
-    const { hd_index } = rows[0];
+    const hd_index = await getWalletHdIndex(walletAddress);
     const userPrivateKey = deriveTronPrivateKey(hd_index);
     const tronWeb = getTronWeb(chainConfig);
     tronWeb.setAddress(walletAddress);
@@ -243,7 +252,7 @@ export const sweepTRC20 = async (
     }
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, created_at)
        VALUES (?, ?, ?, ?, ?, 'success', NOW())`,
       [walletAddress, chainConfig.name, token, amountFormatted, txHash],
@@ -257,7 +266,7 @@ export const sweepTRC20 = async (
     );
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, error, created_at)
        VALUES (?, ?, ?, '0', NULL, 'failed', ?, NOW())`,
       [
@@ -277,15 +286,7 @@ export const sweepNativeTRX = async (
   chainConfig: TronChainConfig,
 ): Promise<{ txHash: string; amount: string }> => {
   try {
-    const rows = await dbQuery<{ hd_index: number }>(
-      "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
-      [walletAddress],
-    );
-
-    if (rows.length === 0)
-      throw new Error(`Wallet not found: ${walletAddress}`);
-
-    const { hd_index } = rows[0];
+    const hd_index = await getWalletHdIndex(walletAddress);
     const userPrivateKey = deriveTronPrivateKey(hd_index);
     const tronWeb = getTronWeb(chainConfig);
 
@@ -335,7 +336,7 @@ export const sweepNativeTRX = async (
     );
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, created_at)
        VALUES (?, ?, 'TRX', ?, ?, 'success', NOW())`,
       [walletAddress, chainConfig.name, amountFormatted, txHash],
@@ -349,7 +350,7 @@ export const sweepNativeTRX = async (
     );
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, error, created_at)
        VALUES (?, ?, 'TRX', '0', NULL, 'failed', ?, NOW())`,
       [

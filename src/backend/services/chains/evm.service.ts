@@ -17,11 +17,11 @@ import {
   HOT_WALLET_ADDRESS_EVM,
   ETH_MIN_SWEEP_THRESHOLD,
 } from "../../config/constants";
-import { dbQuery } from "../../config/db.context";
+import { dbQuery, getDBAdapter } from "../../config/db.context";
 import { signUserOperation } from "../paymaster.service";
-import { ERC20_ABI } from "../../contract/contract";
+import ERC20_ABI from "../../contract/abi/ERC20Abi.json";
 
-// HD wallet master
+// ─── HD Wallet ────────────────────────────────────────────────────────────────
 let masterWallet: HDNodeWallet | null = null;
 
 const getMasterWallet = (): HDNodeWallet => {
@@ -38,6 +38,23 @@ const getMasterWallet = (): HDNodeWallet => {
 
 const derivePrivateKey = (hdIndex: number): `0x${string}` => {
   return getMasterWallet().deriveChild(hdIndex).privateKey as `0x${string}`;
+};
+
+// ─── Wallet Lookup ────────────────────────────────────────────────────────────
+const getWalletHdIndex = async (walletAddress: string): Promise<number> => {
+  const adapter = getDBAdapter();
+
+  const walletRow = adapter
+    ? await adapter.getWalletByAddress(walletAddress)
+    : (
+        await dbQuery<{ hd_index: number }>(
+          "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
+          [walletAddress],
+        )
+      )[0];
+
+  if (!walletRow) throw new Error(`Wallet not found: ${walletAddress}`);
+  return walletRow.hd_index;
 };
 
 export const getPublicClient = (chainConfig: EVMChainConfig) => {
@@ -139,15 +156,7 @@ export const sweepERC20 = async (
   }
 
   try {
-    const rows = await dbQuery<{ hd_index: number }>(
-      "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
-      [walletAddress],
-    );
-
-    if (rows.length === 0)
-      throw new Error(`Wallet not found: ${walletAddress}`);
-
-    const { hd_index } = rows[0];
+    const hd_index = await getWalletHdIndex(walletAddress);
     const privateKey = derivePrivateKey(hd_index);
     const publicClient = getPublicClient(chainConfig);
 
@@ -205,7 +214,7 @@ export const sweepERC20 = async (
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, created_at)
        VALUES (?, ?, ?, ?, ?, 'success', NOW())`,
       [walletAddress, chainConfig.chainId, token, amountFormatted, txHash],
@@ -229,7 +238,7 @@ export const sweepERC20 = async (
     }
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, error, created_at)
        VALUES (?, ?, ?, '0', NULL, 'failed', ?, NOW())`,
       [
@@ -249,15 +258,7 @@ export const sweepNativeETH = async (
   chainConfig: EVMChainConfig,
 ): Promise<{ txHash: string; amount: string }> => {
   try {
-    const rows = await dbQuery<{ hd_index: number }>(
-      "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
-      [walletAddress],
-    );
-
-    if (rows.length === 0)
-      throw new Error(`Wallet not found: ${walletAddress}`);
-
-    const { hd_index } = rows[0];
+    const hd_index = await getWalletHdIndex(walletAddress);
     const privateKey = derivePrivateKey(hd_index);
     const publicClient = getPublicClient(chainConfig);
 
@@ -315,7 +316,7 @@ export const sweepNativeETH = async (
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, created_at)
        VALUES (?, ?, 'ETH', ?, ?, 'success', NOW())`,
       [walletAddress, chainConfig.chainId, amountFormatted, txHash],
@@ -339,7 +340,7 @@ export const sweepNativeETH = async (
     }
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, error, created_at)
        VALUES (?, ?, 'ETH', '0', NULL, 'failed', ?, NOW())`,
       [

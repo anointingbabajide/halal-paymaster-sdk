@@ -16,7 +16,7 @@ import {
 } from "@solana/spl-token";
 import { Mnemonic } from "ethers";
 import { derivePath } from "ed25519-hd-key";
-import { dbQuery } from "../../config/db.context";
+import { dbQuery, getDBAdapter } from "../../config/db.context";
 import {
   TokenKey,
   HOT_WALLET_ADDRESS_SOLANA,
@@ -39,7 +39,7 @@ const getFeePayerKeypair = (): Keypair => {
   return feePayerKeypair;
 };
 
-// ─── HD Derivation (ed25519 — Solana BIP44 path) ─────────────────────────────
+// ─── HD Derivation ────────────────────────────────────────────────────────────
 const deriveSolanaKeypair = (hdIndex: number): Keypair => {
   const mnemonic = process.env.HD_MNEMONIC!;
   const seed = Mnemonic.fromPhrase(mnemonic);
@@ -47,6 +47,23 @@ const deriveSolanaKeypair = (hdIndex: number): Keypair => {
   const path = `m/44'/501'/${hdIndex}'/0'`;
   const { key } = derivePath(path, seedBuffer.toString("hex"));
   return Keypair.fromSeed(key);
+};
+
+// ─── Wallet Lookup ────────────────────────────────────────────────────────────
+const getWalletHdIndex = async (walletAddress: string): Promise<number> => {
+  const adapter = getDBAdapter();
+
+  const walletRow = adapter
+    ? await adapter.getWalletByAddress(walletAddress)
+    : (
+        await dbQuery<{ hd_index: number }>(
+          "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
+          [walletAddress],
+        )
+      )[0];
+
+  if (!walletRow) throw new Error(`Wallet not found: ${walletAddress}`);
+  return walletRow.hd_index;
 };
 
 // ─── Connection ───────────────────────────────────────────────────────────────
@@ -72,15 +89,7 @@ export const sweepSPLToken = async (
   }
 
   try {
-    const rows = await dbQuery<{ hd_index: number }>(
-      "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
-      [walletAddress],
-    );
-
-    if (rows.length === 0)
-      throw new Error(`Wallet not found: ${walletAddress}`);
-
-    const { hd_index } = rows[0];
+    const hd_index = await getWalletHdIndex(walletAddress);
     const userKeypair = deriveSolanaKeypair(hd_index);
     const feePayer = getFeePayerKeypair();
     const connection = getSolanaConnection(chainConfig);
@@ -164,7 +173,7 @@ export const sweepSPLToken = async (
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, created_at)
        VALUES (?, ?, ?, ?, ?, 'success', NOW())`,
       [walletAddress, chainConfig.cluster, token, amountFormatted, txHash],
@@ -178,7 +187,7 @@ export const sweepSPLToken = async (
     );
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, error, created_at)
        VALUES (?, ?, ?, '0', NULL, 'failed', ?, NOW())`,
       [
@@ -198,15 +207,7 @@ export const sweepNativeSOL = async (
   chainConfig: SolanaChainConfig,
 ): Promise<{ txHash: string; amount: string }> => {
   try {
-    const rows = await dbQuery<{ hd_index: number }>(
-      "SELECT hd_index FROM wallets WHERE address = ? AND is_active = true",
-      [walletAddress],
-    );
-
-    if (rows.length === 0)
-      throw new Error(`Wallet not found: ${walletAddress}`);
-
-    const { hd_index } = rows[0];
+    const hd_index = await getWalletHdIndex(walletAddress);
     const userKeypair = deriveSolanaKeypair(hd_index);
     const feePayer = getFeePayerKeypair();
     const connection = getSolanaConnection(chainConfig);
@@ -269,7 +270,7 @@ export const sweepNativeSOL = async (
     console.log(`[${chainConfig.name}] Tx hash: ${txHash}`);
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, created_at)
        VALUES (?, ?, 'SOL', ?, ?, 'success', NOW())`,
       [walletAddress, chainConfig.cluster, amountFormatted, txHash],
@@ -283,7 +284,7 @@ export const sweepNativeSOL = async (
     );
 
     await dbQuery(
-      `INSERT INTO sweep_history 
+      `INSERT INTO sweep_history
         (wallet_address, chain_id, token, amount, tx_hash, status, error, created_at)
        VALUES (?, ?, 'SOL', '0', NULL, 'failed', ?, NOW())`,
       [
