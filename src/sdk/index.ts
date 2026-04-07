@@ -6,6 +6,7 @@ import {
 import { DBAdapter } from "./db/adapter";
 import { CHAIN_CONFIGS } from "../backend/config/chains";
 import { ChainKey } from "../backend/config/constants";
+import { setDBAdapter } from "../backend/config/db.context";
 
 export class HalalPaymaster {
   private config: HalalPaymasterConfig;
@@ -22,6 +23,8 @@ export class HalalPaymaster {
       config.database.type,
       config.database.tables, // ← pass table config
     );
+
+    setDBAdapter(this.db);
     // inject config into environment so existing services pick it up
     // process.env.HD_MNEMONIC = config.keys.hdMnemonic;
     process.env.SIGNER_PRIVATE_KEY = config.keys.evmSignerKey;
