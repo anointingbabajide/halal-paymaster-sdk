@@ -75,7 +75,6 @@ export class DBAdapter {
     }
   }
 
-  // ─── Wallet Queries ─────────────────────────────────────────────────────────
   async getWalletsByChainType(chainType: string): Promise<WalletRow[]> {
     const {
       tableName,
@@ -87,12 +86,12 @@ export class DBAdapter {
 
     const rows = await this.query<any>(
       `SELECT 
-        ${addressColumn} as address,
-        ${chainColumn} as chain,
-        ${hdIndexColumn} as hd_index,
-        ${isActiveColumn} as is_active
-       FROM ${tableName}
-       WHERE ${chainColumn} = ? AND ${isActiveColumn} = true`,
+      \`${addressColumn}\` as address,
+      \`${chainColumn}\` as chain,
+      \`${hdIndexColumn}\` as hd_index,
+      \`${isActiveColumn}\` as is_active
+     FROM \`${tableName}\`
+     WHERE \`${chainColumn}\` = ? AND \`${isActiveColumn}\` = true`,
       [chainType],
     );
     return rows;
@@ -109,12 +108,12 @@ export class DBAdapter {
 
     const rows = await this.query<any>(
       `SELECT 
-        ${addressColumn} as address,
-        ${chainColumn} as chain,
-        ${hdIndexColumn} as hd_index,
-        ${isActiveColumn} as is_active
-       FROM ${tableName}
-       WHERE ${addressColumn} = ?`,
+      \`${addressColumn}\` as address,
+      \`${chainColumn}\` as chain,
+      \`${hdIndexColumn}\` as hd_index,
+      \`${isActiveColumn}\` as is_active
+     FROM \`${tableName}\`
+     WHERE \`${addressColumn}\` = ?`,
       [address],
     );
     return rows[0] ?? null;
