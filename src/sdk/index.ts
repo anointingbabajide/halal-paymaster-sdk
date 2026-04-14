@@ -5,8 +5,14 @@ import {
 } from "./types";
 import { DBAdapter } from "./db/adapter";
 import { CHAIN_CONFIGS } from "../backend/config/chains";
-import { ChainKey } from "../backend/config/constants";
+import { ChainKey, ENTRY_POINT_ADDRESS } from "../backend/config/constants";
 import { setDBAdapter } from "../backend/config/db.context";
+import { createWalletClient, http, parseEther, publicActions } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { isEVMConfig } from "../backend/config/chains";
+import PAYMASTER_ABI from "../backend/contract/abi/HalalPaymasterAbi.json";
+import ENTRY_POINT_ABI from "../backend/contract/abi/entryPointAbi.json";
+import { ethers } from "ethers";
 
 export class HalalPaymaster {
   private config: HalalPaymasterConfig;
@@ -145,6 +151,118 @@ export class HalalPaymaster {
     this.workers.clear();
     await this.db.disconnect();
     console.log("[SDK] All workers stopped");
+  }
+
+  // ─── Deposit to Paymaster ─────────────────────────────────────────────────────
+  async depositToPaymaster(
+    chainKey: ChainKey,
+    depositAmountEth: string,
+    stakeAmountEth: string,
+    unstakeDelaySec: number = 86400,
+  ): Promise<{
+    depositTxHash: string;
+    stakeTxHash: string;
+    currentBalance: string;
+  }> {
+    const chainConfig = CHAIN_CONFIGS[chainKey];
+    if (!chainConfig) throw new Error(`Unknown chain: ${chainKey}`);
+    if (!isEVMConfig(chainConfig))
+      throw new Error(`depositToPaymaster only works for EVM chains`);
+    if (!chainConfig.paymasterAddress)
+      throw new Error(
+        `No paymaster address configured for ${chainConfig.name}`,
+      );
+
+    const signerKey = process.env.SIGNER_PRIVATE_KEY;
+    if (!signerKey) throw new Error("SIGNER_PRIVATE_KEY not set");
+
+    const provider = new ethers.JsonRpcProvider(chainConfig.rpcUrl);
+    const signer = new ethers.Wallet(signerKey, provider);
+
+    const paymaster = new ethers.Contract(
+      chainConfig.paymasterAddress,
+      PAYMASTER_ABI,
+      signer,
+    );
+
+    const entryPoint = new ethers.Contract(
+      ENTRY_POINT_ADDRESS,
+      ENTRY_POINT_ABI,
+      provider,
+    );
+
+    // ─── simulate deposit ──────────────────────────────────────────────────
+    console.log(
+      `[${chainConfig.name}] Simulating deposit of ${depositAmountEth} ETH...`,
+    );
+    await paymaster.deposit.staticCall({
+      value: ethers.parseEther(depositAmountEth),
+    });
+    console.log(`[${chainConfig.name}] Deposit simulation passed ✅`);
+    console.log(
+      `[${chainConfig.name}] Depositing ${depositAmountEth} ETH into paymaster...`,
+    );
+    const depositTx = await paymaster.deposit({
+      value: ethers.parseEther(depositAmountEth),
+    });
+    await depositTx.wait();
+    console.log(
+      `[${chainConfig.name}] Deposited ${depositAmountEth} ETH | tx: ${depositTx.hash}`,
+    );
+
+    // ─── simulate stake ────────────────────────────────────────────────────
+    console.log(
+      `[${chainConfig.name}] Simulating stake of ${stakeAmountEth} ETH...`,
+    );
+    await paymaster.addStake.staticCall(unstakeDelaySec, {
+      value: ethers.parseEther(stakeAmountEth),
+    });
+    console.log(`[${chainConfig.name}] Stake simulation passed ✅`);
+
+    // ─── execute stake ─────────────────────────────────────────────────────
+    console.log(`[${chainConfig.name}] Staking ${stakeAmountEth} ETH...`);
+    const stakeTx = await paymaster.addStake(unstakeDelaySec, {
+      value: ethers.parseEther(stakeAmountEth),
+    });
+    await stakeTx.wait();
+    console.log(
+      `[${chainConfig.name}] Staked ${stakeAmountEth} ETH | tx: ${stakeTx.hash}`,
+    );
+
+    // ─── check balance ─────────────────────────────────────────────────────
+    const balance = await entryPoint.balanceOf(chainConfig.paymasterAddress);
+    const currentBalance = ethers.formatEther(balance);
+    console.log(
+      `[${chainConfig.name}] Paymaster balance: ${currentBalance} ETH`,
+    );
+
+    return {
+      depositTxHash: depositTx.hash,
+      stakeTxHash: stakeTx.hash,
+      currentBalance,
+    };
+  }
+
+  async getPaymasterBalance(chainKey: ChainKey): Promise<string> {
+    const chainConfig = CHAIN_CONFIGS[chainKey];
+    if (!chainConfig || !isEVMConfig(chainConfig)) {
+      throw new Error(`getPaymasterBalance only works for EVM chains`);
+    }
+    if (!chainConfig.paymasterAddress) {
+      throw new Error(
+        `No paymaster address configured for ${chainConfig.name}`,
+      );
+    }
+
+    const provider = new ethers.JsonRpcProvider(chainConfig.rpcUrl);
+    const entryPoint = new ethers.Contract(
+      ENTRY_POINT_ADDRESS,
+      ENTRY_POINT_ABI,
+      provider,
+    );
+
+    const balance = await entryPoint.balanceOf(chainConfig.paymasterAddress);
+    return ethers.formatEther(balance);
   }
 
   //  sweep history

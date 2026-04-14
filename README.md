@@ -2,11 +2,7 @@
 
 A multi-chain paymaster SDK that automatically sweeps USDT and USDC deposits from user wallets to your hot wallet. Users never pay gas fees — the SDK handles all fee sponsorship across EVM, Solana, and Tron.
 
-## How It Works
-
-User deposits USDT/USDC → SDK detects balance → Sweeps to hot wallet → onSweepComplete fires
-
-````
+## How it Works
 
 1. User deposits USDT or USDC to their assigned wallet address
 2. SDK detects the balance above your threshold
@@ -16,17 +12,17 @@ User deposits USDT/USDC → SDK detects balance → Sweeps to hot wallet → onS
 
 ## Supported Chains
 
-| Chain | Tokens | Fee Model |
-|-------|--------|-----------|
+| Chain               | Tokens          | Fee Model                               |
+| ------------------- | --------------- | --------------------------------------- |
 | Ethereum / Arbitrum | USDT, USDC, ETH | ERC-4337 Paymaster — user pays zero ETH |
-| Solana | USDT, USDC, SOL | feePayer pattern — user pays zero SOL |
-| Tron | USDT, USDC, TRX | Energy delegation — user pays zero TRX |
+| Solana              | USDT, USDC, SOL | feePayer pattern — user pays zero SOL   |
+| Tron                | USDT, USDC, TRX | Energy delegation — user pays zero TRX  |
 
 ## Installation
 
 ```bash
 npm install @halalfi/paymaster-sdk
-````
+```
 
 ## Requirements
 
@@ -134,6 +130,82 @@ const paymaster = new HalalPaymaster({
   },
 });
 
+// optional: listen to all SDK logs for admin dashboard
+paymaster.on("log", (event) => {
+  io.emit("sdk:log", event);
+});
+
+// optional: listen to sweep events directly
+paymaster.on("sweep:complete", (event) => {
+  io.emit("sweep:complete", event);
+});
+
+paymaster.on("sweep:failed", (event) => {
+  io.emit("sweep:failed", event);
+});
+
+await paymaster.start();
+```
+
+## EVM Paymaster Funding
+
+Before EVM sweeps can work the paymaster contract must be funded with ETH. The SDK handles this for you.
+
+### Deposit and Stake
+
+```typescript
+const result = await paymaster.depositToPaymaster(
+  "arbitrum", // chain key
+  "0.05", // ETH to deposit for gas sponsorship
+  "0.01", // ETH to stake (required by bundlers)
+  86400, // unstake delay in seconds — optional, defaults to 86400 (1 day)
+);
+
+console.log("Deposit tx:", result.depositTxHash);
+console.log("Stake tx:", result.stakeTxHash);
+console.log("Current balance:", result.currentBalance, "ETH");
+```
+
+### Check Paymaster Balance
+
+```typescript
+const balance = await paymaster.getPaymasterBalance("arbitrum");
+console.log("Paymaster balance:", balance, "ETH");
+```
+
+### Auto Top Up
+
+Set up automatic top up when balance runs low:
+
+```typescript
+// check every hour and top up if needed
+setInterval(
+  async () => {
+    const balance = await paymaster.getPaymasterBalance("arbitrum");
+    if (parseFloat(balance) < 0.05) {
+      console.log("Paymaster balance low, topping up...");
+      await paymaster.depositToPaymaster("arbitrum", "0.1", "0.05");
+    }
+  },
+  60 * 60 * 1000,
+);
+```
+
+### Recommended Flow
+
+```typescript
+const paymaster = new HalalPaymaster({ ...config });
+
+// check balance before starting
+const balance = await paymaster.getPaymasterBalance("arbitrum");
+console.log(`Paymaster balance: ${balance} ETH`);
+
+// top up if low
+if (parseFloat(balance) < 0.05) {
+  await paymaster.depositToPaymaster("arbitrum", "0.1", "0.05");
+}
+
+// start sweep worker
 await paymaster.start();
 ```
 
@@ -216,6 +288,14 @@ interface SweepFailedEvent {
   error: string;
   timestamp: Date;
 }
+
+interface SweepLogEvent {
+  chain: string;
+  level: "info" | "warn" | "error";
+  message: string;
+  timestamp: Date;
+  data?: any;
+}
 ```
 
 ## Get Sweep History
@@ -239,6 +319,62 @@ EVM_SIGNER_KEY=0x...
 SOLANA_FEE_PAYER_KEY=...
 TRON_FEE_PAYER_KEY=...
 PIMLICO_API_KEY=pim_...
+```
+
+## Wallet Generation
+
+Your wallets must be generated using the same derivation paths as the SDK. Otherwise key derivation will not match and sweeps will fail.
+
+### EVM
+
+```typescript
+import { HDNodeWallet, Mnemonic } from "ethers";
+import { privateKeyToAccount } from "viem/accounts";
+import { toSimpleSmartAccount } from "permissionless/accounts";
+import { entryPoint07Address } from "viem/account-abstraction";
+
+const master = HDNodeWallet.fromMnemonic(Mnemonic.fromPhrase(mnemonic));
+const privateKey = master.deriveChild(hdIndex).privateKey;
+const owner = privateKeyToAccount(privateKey);
+
+const smartAccount = await toSimpleSmartAccount({
+  client: publicClient,
+  owner,
+  entryPoint: { address: entryPoint07Address, version: "0.7" },
+});
+
+// store smartAccount.address in DB — not owner.address
+```
+
+### Solana
+
+```typescript
+import { mnemonicToSeedSync } from "bip39";
+import { derivePath } from "ed25519-hd-key";
+import { Keypair } from "@solana/web3.js";
+
+const seed = mnemonicToSeedSync(mnemonic);
+const path = `m/44'/501'/0'/${hdIndex}'`;
+const { key } = derivePath(path, seed.toString("hex"));
+const keypair = Keypair.fromSeed(key);
+
+// store keypair.publicKey.toBase58() in DB
+```
+
+### Tron
+
+```typescript
+import { mnemonicToSeedSync } from "bip39";
+import { HDKey } from "@scure/bip32";
+import TronWeb from "tronweb";
+
+const seed = mnemonicToSeedSync(mnemonic);
+const hd = HDKey.fromMasterSeed(seed);
+const child = hd.derive(`m/44'/195'/0'/0/${hdIndex}`);
+const privateKey = Buffer.from(child.privateKey).toString("hex");
+const address = TronWeb.address.fromPrivateKey(privateKey);
+
+// store address in DB
 ```
 
 ## Tron Mainnet Setup
@@ -270,7 +406,3 @@ On Tron mainnet you need to stake TRX to get energy for gasless sweeps:
 ## License
 
 MIT — Anointing Babajide
-
-```
-
-```

@@ -1,10 +1,5 @@
 import { ethers } from "ethers";
-import {
-  ChainConfig,
-  ChainKey,
-  TokenKey,
-  CHAIN_CONFIGS,
-} from "../config/chains";
+import { ChainConfig, CHAIN_CONFIGS } from "../config/chains";
 import config from "../config/index";
 import PAYMASTER_ABI from "./abi/HalalPaymasterAbi.json";
 import ERC20_ABI from "./abi/ERC20Abi.json";

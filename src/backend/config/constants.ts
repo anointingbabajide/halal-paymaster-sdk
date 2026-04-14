@@ -183,6 +183,7 @@ export const HOT_WALLET_ADDRESS_EVM =
 export const HOT_WALLET_ADDRESS_SOLANA =
   "8rarfJKzjd2Bk4GG6xjawCvAAh9zBKdAu7cdF8p6Ni4h";
 export const HOT_WALLET_ADDRESS_TRON = "TEbGVgMKtcHYC21sysFnDgRmH51cMxvpX1";
+export const ENTRY_POINT_ADDRESS = "0x0000000071727De22E5E9d8BAf0edAc6f37da032";
 
 export const isEVMChain = (
   chain: ChainDefinition,
