@@ -264,7 +264,6 @@ export class HalalPaymaster {
     const balance = await entryPoint.balanceOf(chainConfig.paymasterAddress);
     return ethers.formatEther(balance);
   }
-
   //  sweep history
   async getSweepHistory(address: string) {
     return this.db.getSweepHistory(address);
