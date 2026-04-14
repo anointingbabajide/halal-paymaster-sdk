@@ -234,6 +234,7 @@ export class HalalPaymaster extends EventEmitter {
       provider,
     );
 
+    // ─── deposit ───────────────────────────────────────────────────────────
     console.log(
       `[${chainConfig.name}] Simulating deposit of ${depositAmountEth} ETH...`,
     );
@@ -253,23 +254,32 @@ export class HalalPaymaster extends EventEmitter {
       `[${chainConfig.name}] Deposited ${depositAmountEth} ETH | tx: ${depositTx.hash}`,
     );
 
-    console.log(
-      `[${chainConfig.name}] Simulating stake of ${stakeAmountEth} ETH...`,
-    );
-    await paymasterContract.addStake.staticCall(unstakeDelaySec, {
-      value: ethers.parseEther(stakeAmountEth),
-    });
-    console.log(`[${chainConfig.name}] Stake simulation passed`);
+    // ─── stake only if amount > 0 ──────────────────────────────────────────
+    let stakeTxHash = "";
 
-    console.log(`[${chainConfig.name}] Staking ${stakeAmountEth} ETH...`);
-    const stakeTx = await paymasterContract.addStake(unstakeDelaySec, {
-      value: ethers.parseEther(stakeAmountEth),
-    });
-    await stakeTx.wait();
-    console.log(
-      `[${chainConfig.name}] Staked ${stakeAmountEth} ETH | tx: ${stakeTx.hash}`,
-    );
+    if (parseFloat(stakeAmountEth) > 0) {
+      console.log(
+        `[${chainConfig.name}] Simulating stake of ${stakeAmountEth} ETH...`,
+      );
+      await paymasterContract.addStake.staticCall(unstakeDelaySec, {
+        value: ethers.parseEther(stakeAmountEth),
+      });
+      console.log(`[${chainConfig.name}] Stake simulation passed`);
 
+      console.log(`[${chainConfig.name}] Staking ${stakeAmountEth} ETH...`);
+      const stakeTx = await paymasterContract.addStake(unstakeDelaySec, {
+        value: ethers.parseEther(stakeAmountEth),
+      });
+      await stakeTx.wait();
+      stakeTxHash = stakeTx.hash;
+      console.log(
+        `[${chainConfig.name}] Staked ${stakeAmountEth} ETH | tx: ${stakeTxHash}`,
+      );
+    } else {
+      console.log(`[${chainConfig.name}] Skipping stake`);
+    }
+
+    // ─── check balance ──────────────────────────────────────────────────────
     const balance = await entryPoint.balanceOf(chainConfig.paymasterAddress);
     const currentBalance = ethers.formatEther(balance);
     console.log(
@@ -278,7 +288,7 @@ export class HalalPaymaster extends EventEmitter {
 
     return {
       depositTxHash: depositTx.hash,
-      stakeTxHash: stakeTx.hash,
+      stakeTxHash,
       currentBalance,
     };
   }

@@ -1,6 +1,6 @@
 {
   "name": "@halalfi/paymaster-sdk",
-  "version": "1.0.20",
+  "version": "1.0.21",
   "description": "Multi-chain sweep and paymaster SDK: EVM, Solana, Tron. Gasless transactions for your users.",
   "main": "dist/sdk/index.js",
   "types": "dist/sdk/index.d.ts",
