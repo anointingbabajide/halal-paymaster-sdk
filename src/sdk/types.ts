@@ -57,6 +57,13 @@ export interface SweepFailedEvent {
   error: string;
   timestamp: Date;
 }
+export interface SweepLogEvent {
+  chain: string;
+  level: "info" | "warn" | "error";
+  message: string;
+  timestamp: Date;
+  data?: any;
+}
 
 export interface HalalPaymasterConfig {
   database: DatabaseConfig;
