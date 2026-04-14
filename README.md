@@ -1,22 +1,22 @@
 # @halalfi/paymaster-sdk
 
-A multi-chain paymaster SDK that automatically sweeps USDT and USDC deposits from user wallets to your hot wallet. Users never pay gas fees — the SDK handles all fee sponsorship across EVM, Solana, and Tron.
+A multi-chain paymaster SDK that automatically sweeps USDT and USDC deposits from user wallets to your hot wallet. Users never pay gas fees: the SDK handles all fee sponsorship across EVM, Solana, and Tron.
 
 ## How it Works
 
 1. User deposits USDT or USDC to their assigned wallet address
 2. SDK detects the balance above your threshold
-3. SDK sponsors the gas fee — user pays nothing
+3. SDK sponsors the gas fee: user pays nothing
 4. Funds move to your hot wallet
 5. `onSweepComplete` fires so you can credit the user in your own system
 
 ## Supported Chains
 
-| Chain               | Tokens          | Fee Model                               |
-| ------------------- | --------------- | --------------------------------------- |
-| Ethereum / Arbitrum | USDT, USDC, ETH | ERC-4337 Paymaster — user pays zero ETH |
-| Solana              | USDT, USDC, SOL | feePayer pattern — user pays zero SOL   |
-| Tron                | USDT, USDC, TRX | Energy delegation — user pays zero TRX  |
+| Chain               | Tokens          | Fee Model                              |
+| ------------------- | --------------- | -------------------------------------- |
+| Ethereum / Arbitrum | USDT, USDC, ETH | ERC-4337 Paymaster: user pays zero ETH |
+| Solana              | USDT, USDC, SOL | feePayer pattern: user pays zero SOL   |
+| Tron                | USDT, USDC, TRX | Energy delegation: user pays zero TRX  |
 
 ## Installation
 
@@ -29,7 +29,7 @@ npm install @halalfi/paymaster-sdk
 - Node.js 18 or higher
 - PostgreSQL or MySQL database
 - A `wallets` table with the required columns
-- A `sweep_history` table — SDK writes to this automatically
+- A `sweep_history` table: SDK writes to this automatically
 
 ## Database Setup
 
@@ -158,7 +158,7 @@ const result = await paymaster.depositToPaymaster(
   "arbitrum", // chain key
   "0.05", // ETH to deposit for gas sponsorship
   "0.01", // ETH to stake (required by bundlers)
-  86400, // unstake delay in seconds — optional, defaults to 86400 (1 day)
+  86400, // unstake delay in seconds: optional, defaults to 86400 (1 day)
 );
 
 console.log("Deposit tx:", result.depositTxHash);
@@ -328,25 +328,17 @@ On Tron mainnet you need to stake TRX to get energy for gasless sweeps:
 1. Go to https://tronscan.org
 2. Stake at least 1000 TRX for ENERGY
 3. SDK automatically delegates energy to user wallets before each sweep
-4. Energy regenerates daily — zero ongoing cost per sweep
+4. Energy regenerates daily: zero ongoing cost per sweep
 
 ## Security
 
 - Never commit `.env` to version control
 - Store `HD_MNEMONIC` in a secrets manager in production (AWS KMS, HashiCorp Vault)
-- Pin the exact SDK version in your package.json — do not use `latest`
+- Pin the exact SDK version in your package.json: do not use `latest`
 - Validate `onSweepComplete` events against on-chain data before crediting users
 - Keep hot wallets funded with minimum operational balance only
 - Monitor `sweep_history` table for failed sweeps or unusual activity
 
-```json
-{
-  "dependencies": {
-    "@halalfi/paymaster-sdk": "1.0.2"
-  }
-}
-```
-
 ## License
 
-MIT — Anointing Babajide
+MIT: Anointing Babajide
