@@ -240,7 +240,7 @@ export class HalalPaymaster extends EventEmitter {
     await paymasterContract.deposit.staticCall({
       value: ethers.parseEther(depositAmountEth),
     });
-    console.log(`[${chainConfig.name}] Deposit simulation passed ✅`);
+    console.log(`[${chainConfig.name}] Deposit simulation passed`);
 
     console.log(
       `[${chainConfig.name}] Depositing ${depositAmountEth} ETH into paymaster...`,
@@ -259,7 +259,7 @@ export class HalalPaymaster extends EventEmitter {
     await paymasterContract.addStake.staticCall(unstakeDelaySec, {
       value: ethers.parseEther(stakeAmountEth),
     });
-    console.log(`[${chainConfig.name}] Stake simulation passed ✅`);
+    console.log(`[${chainConfig.name}] Stake simulation passed`);
 
     console.log(`[${chainConfig.name}] Staking ${stakeAmountEth} ETH...`);
     const stakeTx = await paymasterContract.addStake(unstakeDelaySec, {
