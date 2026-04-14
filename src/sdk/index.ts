@@ -26,6 +26,8 @@ export class HalalPaymaster extends EventEmitter {
   private originalError = console.error.bind(console);
   private originalWarn = console.warn.bind(console);
 
+  private isLogging = false; // ← class property here
+
   constructor(config: HalalPaymasterConfig) {
     super(); // ← call super
     this.validateConfig(config);
@@ -77,37 +79,45 @@ export class HalalPaymaster extends EventEmitter {
       return;
     }
 
-    // ─── intercept console to emit as log events ──────────────────────────
+    // in start():
     console.log = (...args: any[]) => {
       this.originalLog(...args);
+      if (this.isLogging) return;
+      this.isLogging = true;
       this.emit("log", {
         chain: "system",
         level: "info",
         message: args.join(" "),
         timestamp: new Date(),
       } as SweepLogEvent);
+      this.isLogging = false;
     };
 
     console.error = (...args: any[]) => {
       this.originalError(...args);
+      if (this.isLogging) return;
+      this.isLogging = true;
       this.emit("log", {
         chain: "system",
         level: "error",
         message: args.join(" "),
         timestamp: new Date(),
       } as SweepLogEvent);
+      this.isLogging = false;
     };
 
     console.warn = (...args: any[]) => {
       this.originalWarn(...args);
+      if (this.isLogging) return;
+      this.isLogging = true;
       this.emit("log", {
         chain: "system",
         level: "warn",
         message: args.join(" "),
         timestamp: new Date(),
       } as SweepLogEvent);
+      this.isLogging = false;
     };
-    // ─────────────────────────────────────────────────────────────────────
 
     await this.db.connect();
     this.running = true;
