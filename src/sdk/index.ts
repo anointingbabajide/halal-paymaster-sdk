@@ -179,12 +179,16 @@ export class HalalPaymaster extends EventEmitter {
   }
 
   async stop(): Promise<void> {
+    if (!this.running) return; // ← guard against double stop
+
     console.log("[SDK] Stopping sweep workers...");
     this.running = false;
+
     for (const [chainKey, timer] of this.workers) {
       clearInterval(timer);
       console.log(`[SDK] Stopped worker for ${chainKey}`);
     }
+
     this.workers.clear();
     await this.db.disconnect();
     console.log("[SDK] All workers stopped");
