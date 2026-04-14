@@ -321,62 +321,6 @@ TRON_FEE_PAYER_KEY=...
 PIMLICO_API_KEY=pim_...
 ```
 
-## Wallet Generation
-
-Your wallets must be generated using the same derivation paths as the SDK. Otherwise key derivation will not match and sweeps will fail.
-
-### EVM
-
-```typescript
-import { HDNodeWallet, Mnemonic } from "ethers";
-import { privateKeyToAccount } from "viem/accounts";
-import { toSimpleSmartAccount } from "permissionless/accounts";
-import { entryPoint07Address } from "viem/account-abstraction";
-
-const master = HDNodeWallet.fromMnemonic(Mnemonic.fromPhrase(mnemonic));
-const privateKey = master.deriveChild(hdIndex).privateKey;
-const owner = privateKeyToAccount(privateKey);
-
-const smartAccount = await toSimpleSmartAccount({
-  client: publicClient,
-  owner,
-  entryPoint: { address: entryPoint07Address, version: "0.7" },
-});
-
-// store smartAccount.address in DB — not owner.address
-```
-
-### Solana
-
-```typescript
-import { mnemonicToSeedSync } from "bip39";
-import { derivePath } from "ed25519-hd-key";
-import { Keypair } from "@solana/web3.js";
-
-const seed = mnemonicToSeedSync(mnemonic);
-const path = `m/44'/501'/0'/${hdIndex}'`;
-const { key } = derivePath(path, seed.toString("hex"));
-const keypair = Keypair.fromSeed(key);
-
-// store keypair.publicKey.toBase58() in DB
-```
-
-### Tron
-
-```typescript
-import { mnemonicToSeedSync } from "bip39";
-import { HDKey } from "@scure/bip32";
-import TronWeb from "tronweb";
-
-const seed = mnemonicToSeedSync(mnemonic);
-const hd = HDKey.fromMasterSeed(seed);
-const child = hd.derive(`m/44'/195'/0'/0/${hdIndex}`);
-const privateKey = Buffer.from(child.privateKey).toString("hex");
-const address = TronWeb.address.fromPrivateKey(privateKey);
-
-// store address in DB
-```
-
 ## Tron Mainnet Setup
 
 On Tron mainnet you need to stake TRX to get energy for gasless sweeps:
